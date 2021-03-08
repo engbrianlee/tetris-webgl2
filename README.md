@@ -1,5 +1,10 @@
 # webgl2-tetris
 
+# Sources
+
+- [TWGL, Super light webGL wrapper](https://twgljs.org/)
+- [webgl2 fundamentals](https://webgl2fundamentals.org/webgl/lessons/webgl-fundamentals.html)
+
 # Rules
 
 - https://harddrop.com/wiki/Tetris_Guideline

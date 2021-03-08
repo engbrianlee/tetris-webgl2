@@ -31,36 +31,6 @@
   </body>
   <script src="https://webgl2fundamentals.org/webgl/resources/webgl-lessons-ui.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/twgl-base.js@4.9.0/dist/4.x/twgl.min.js"></script>
-  <script id="vs" type="notjs">
-    #version 300 es
-
-    // an attribute is an input (in) to a vertex shader.
-    // It will receive data from a buffer
-    in vec2 a_position;
-    uniform mat3 u_matrix;
-
-
-    // all shaders have a main function
-    void main() {
-      gl_Position = vec4((u_matrix * vec3(a_position, 1)).xy, 0, 1);
-    }
-  </script>
-  <script id="fs" type="notjs">
-    #version 300 es
-
-    // fragment shaders don't have a default precision so we need
-    // to pick one. highp is a good default. It means "high precision"
-    precision highp float;
-
-    uniform vec4 u_color;
-
-    // we need to declare an output for the fragment shader
-    out vec4 outColor;
-
-    void main() {
-      outColor = u_color;
-    }
-  </script>
   <script>
     /** Matrix lib */
     const m3 = {
@@ -136,12 +106,51 @@
      * [webgl2 fundamentals](https://webgl2fundamentals.org/webgl/lessons/webgl-fundamentals.html)
      * [webgl mdn](https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API)
      */
-    twgl.setDefaults({ attribPrefix: "a_" });
-    const gl = document.querySelector("#c").getContext("webgl2");
-    const programInfo = twgl.createProgramInfo(gl, ["vs", "fs"]);
-    // boilerplate
-    twgl.resizeCanvasToDisplaySize(gl.canvas);
-    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+    const vs = `
+    #version 300 es
+
+    // an attribute is an input (in) to a vertex shader.
+    // It will receive data from a buffer
+    in vec2 a_position;
+    uniform mat3 u_matrix;
+
+
+    // all shaders have a main function
+    void main() {
+      gl_Position = vec4((u_matrix * vec3(a_position, 1)).xy, 0, 1);
+    }
+    `;
+    const fs = `
+    #version 300 es
+
+    // fragment shaders don't have a default precision so we need
+    // to pick one. highp is a good default. It means "high precision"
+    precision highp float;
+
+    uniform vec4 u_color;
+
+    // we need to declare an output for the fragment shader
+    out vec4 outColor;
+
+    void main() {
+      outColor = u_color;
+    }
+    `;
+
+    const initGl = () => {
+      // Init canvas / webgl2
+      const gl = document.querySelector("#c").getContext("webgl2");
+      twgl.resizeCanvasToDisplaySize(gl.canvas);
+      gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
+      // Init shaders
+      twgl.setDefaults({ attribPrefix: "a_" });
+      const programInfo = twgl.createProgramInfo(gl, [vs, fs]);
+      gl.useProgram(programInfo.program);
+
+      return { gl, programInfo };
+    };
+    const { gl, programInfo } = initGl();
 
     /** SandBox */
     const translation = [150, 100];
@@ -149,134 +158,132 @@
     const scale = [1, 1];
     const color = [Math.random(), Math.random(), Math.random(), 1];
 
-    function updatePosition(index) {
-      return function (event, ui) {
-        translation[index] = ui.value;
-      };
-    }
+    const createSandbox = () => {
+      function updatePosition(index) {
+        return function (event, ui) {
+          translation[index] = ui.value;
+        };
+      }
+      function updateAngle(event, ui) {
+        var angleInDegrees = 360 - ui.value;
+        rotationInRadians = (angleInDegrees * Math.PI) / 180;
+      }
+      function updateScale(index) {
+        return function (event, ui) {
+          scale[index] = ui.value;
+        };
+      }
+      // Setup a ui.
+      webglLessonsUI.setupSlider("#x", {
+        value: translation[0],
+        slide: updatePosition(0),
+        max: gl.canvas.width
+      });
+      webglLessonsUI.setupSlider("#y", {
+        value: translation[1],
+        slide: updatePosition(1),
+        max: gl.canvas.height
+      });
+      webglLessonsUI.setupSlider("#angle", {
+        value: ((rotationInRadians * 180) / Math.PI) | 0,
+        slide: updateAngle,
+        max: 360
+      });
+      webglLessonsUI.setupSlider("#scaleX", {
+        value: scale[0],
+        slide: updateScale(0),
+        min: -5,
+        max: 5,
+        step: 0.01,
+        precision: 2
+      });
+      webglLessonsUI.setupSlider("#scaleY", {
+        value: scale[1],
+        slide: updateScale(1),
+        min: -5,
+        max: 5,
+        step: 0.01,
+        precision: 2
+      });
+    };
+    createSandbox();
 
-    function updateAngle(event, ui) {
-      var angleInDegrees = 360 - ui.value;
-      rotationInRadians = (angleInDegrees * Math.PI) / 180;
-    }
-
-    function updateScale(index) {
-      return function (event, ui) {
-        scale[index] = ui.value;
-      };
-    }
-    // Setup a ui.
-    webglLessonsUI.setupSlider("#x", {
-      value: translation[0],
-      slide: updatePosition(0),
-      max: gl.canvas.width
-    });
-    webglLessonsUI.setupSlider("#y", {
-      value: translation[1],
-      slide: updatePosition(1),
-      max: gl.canvas.height
-    });
-    webglLessonsUI.setupSlider("#angle", {
-      value: ((rotationInRadians * 180) / Math.PI) | 0,
-      slide: updateAngle,
-      max: 360
-    });
-    webglLessonsUI.setupSlider("#scaleX", {
-      value: scale[0],
-      slide: updateScale(0),
-      min: -5,
-      max: 5,
-      step: 0.01,
-      precision: 2
-    });
-    webglLessonsUI.setupSlider("#scaleY", {
-      value: scale[1],
-      slide: updateScale(1),
-      min: -5,
-      max: 5,
-      step: 0.01,
-      precision: 2
-    });
-    /** SandBox */
-
-    // Setup a random rectangle
-    const arrays = {
-      position: [
-        // left column
-        0,
-        0,
-        0,
-        30,
-        0,
-        0,
-        0,
-        150,
-        0,
-        0,
-        150,
-        0,
-        30,
-        0,
-        0,
-        30,
-        150,
-        0,
-
-        // top rung
-        30,
-        0,
-        0,
-        100,
-        0,
-        0,
-        30,
-        30,
-        0,
-        30,
-        30,
-        0,
-        100,
-        0,
-        0,
-        100,
-        30,
-        0,
-
-        // middle rung
-        30,
-        60,
-        0,
-        67,
-        60,
-        0,
-        30,
-        90,
-        0,
-        30,
-        90,
-        0,
-        67,
-        60,
-        0,
-        67,
-        90,
-        0
-      ]
+    /** Clear the canvas */
+    const clear = (r = 0, g = 0, b = 0, a = 0) => {
+      gl.clearColor(r, g, b, a);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     };
 
-    function gameLoop(time) {
-      // Clear the canvas
-      gl.clearColor(0, 0, 0, 0);
-      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    const arrays = {
+      position: {
+        data: new Float32Array([
+          // left column
+          0,
+          0,
+          0,
+          30,
+          0,
+          0,
+          0,
+          150,
+          0,
+          0,
+          150,
+          0,
+          30,
+          0,
+          0,
+          30,
+          150,
+          0,
 
-      // Compute the matrices
-      const projectionMatrix = m3.projection(
-        gl.canvas.clientWidth,
-        gl.canvas.clientHeight
-      );
-      const translationMatrix = m3.translation(translation[0], translation[1]);
-      const rotationMatrix = m3.rotation(rotationInRadians);
-      const scaleMatrix = m3.scaling(scale[0], scale[1]);
+          // top rung
+          30,
+          0,
+          0,
+          100,
+          0,
+          0,
+          30,
+          30,
+          0,
+          30,
+          30,
+          0,
+          100,
+          0,
+          0,
+          100,
+          30,
+          0,
+
+          // middle rung
+          30,
+          60,
+          0,
+          67,
+          60,
+          0,
+          30,
+          90,
+          0,
+          30,
+          90,
+          0,
+          67,
+          60,
+          0,
+          67,
+          90,
+          0
+        ])
+        // drawType: gl.DYNAMIC_DRAW
+      }
+    };
+
+    const gameLoop = (time) => {
+      clear();
+
       let matrix = m3.projection(gl.canvas.clientWidth, gl.canvas.clientHeight);
       matrix = m3.translate(matrix, translation[0], translation[1]);
       matrix = m3.rotate(matrix, rotationInRadians);
@@ -288,13 +295,13 @@
       };
 
       const bufferInfo = twgl.createBufferInfoFromArrays(gl, arrays);
-      gl.useProgram(programInfo.program);
       twgl.setBuffersAndAttributes(gl, programInfo, bufferInfo);
       twgl.setUniforms(programInfo, uniforms);
       twgl.drawBufferInfo(gl, bufferInfo);
 
       requestAnimationFrame(gameLoop);
-    }
+    };
+
     requestAnimationFrame(gameLoop);
   </script>
 </html>
